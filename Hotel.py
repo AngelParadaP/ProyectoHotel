@@ -1,7 +1,8 @@
 from faulthandler import disable
 import tkinter as tk
 from tkinter import SEL, ttk, messagebox
-
+from tkcalendar import DateEntry
+from datetime import datetime
 class Cliente:
     def __init__(self, id, nombre, direccion, email, telefono):
         self.id = id
@@ -52,10 +53,15 @@ class SistemaHotel:
         return True
 
     def eliminar_cliente(self, id):
+        for reservacion in self.reservaciones.values():
+            if reservacion.cliente_id == id:
+                return "HAS RESERVATION"
+            
         if id in self.clientes:
             del self.clientes[id]
-            return True
-        return False
+            return "SUCCESS"
+        
+        return "NOT FOUND"
 
     def registrar_habitacion(self, id, numero):
         if id in self.habitaciones:
@@ -78,6 +84,7 @@ class SistemaHotel:
     def registrar_reservacion(self, id, cliente_id, habitacion_id, fecha_salida,hora_reservacion, costo):
         if id in self.reservaciones:
             return False
+
         fecha_reservacion = "2024-09-03"  # Fecha actual ficticia
         self.reservaciones[id] = Reservacion(id, cliente_id, habitacion_id, fecha_reservacion, fecha_salida,hora_reservacion, costo)
         self.habitaciones[habitacion_id].estado = "Reservado"
@@ -135,11 +142,11 @@ class HotelApp:
         tk.Label(self.frame_clientes, text="Email:").grid(row=4, column=0, padx=10, pady=5)
         tk.Label(self.frame_clientes, text="Teléfono:").grid(row=5, column=0, padx=10, pady=5)
 
-        self.id_entry = tk.Entry(self.frame_clientes)
-        self.nombre_entry = tk.Entry(self.frame_clientes)
-        self.direccion_entry = tk.Entry(self.frame_clientes)
-        self.email_entry = tk.Entry(self.frame_clientes)
-        self.telefono_entry = tk.Entry(self.frame_clientes)
+        self.id_entry = tk.Entry(self.frame_clientes, state="disabled")
+        self.nombre_entry = tk.Entry(self.frame_clientes, state="disabled")
+        self.direccion_entry = tk.Entry(self.frame_clientes, state="disabled")
+        self.email_entry = tk.Entry(self.frame_clientes, state="disabled")
+        self.telefono_entry = tk.Entry(self.frame_clientes, state="disabled")
 
         self.id_entry.grid(row=1, column=1, padx=10, pady=5)
         self.nombre_entry.grid(row=2, column=1, padx=10, pady=5)
@@ -171,8 +178,8 @@ class HotelApp:
         self.reservacion_id_entry = tk.Entry(self.frame_reservaciones)
         self.cliente_id_reservacion_combobox = ttk.Combobox(self.frame_reservaciones)
         self.habitacion_id_reservacion_combobox = ttk.Combobox(self.frame_reservaciones)
-        self.fecha_reservacion_entry = tk.Entry(self.frame_reservaciones)
-        self.fecha_salida_entry = tk.Entry(self.frame_reservaciones)
+        self.fecha_reservacion_entry = DateEntry(self.frame_reservaciones, date_pattern="yyyy-mm-dd")
+        self.fecha_salida_entry = DateEntry(self.frame_reservaciones, date_pattern="yyyy-mm-dd")
         self.hora_reservacion_entry = tk.Entry(self.frame_reservaciones)
         self.costo_reservacion_entry = tk.Entry(self.frame_reservaciones)
 
@@ -277,15 +284,25 @@ class HotelApp:
 
     def eliminar_cliente(self):
         id = self.id_entry.get()
+        
+        state = self.sistema.eliminar_cliente(id)
 
-        if self.sistema.eliminar_cliente(id):
+        if state == "SUCCESS":
             messagebox.showinfo("Éxito", "Cliente eliminado con éxito.")
             self.actualizar_combobox_clientes
             self.limpiar_campos_cliente()
-        else:
-            messagebox.showerror("Error", "Cliente no encontrado.")
+        elif state == "NOT FOUND":
+            messagebox.showerror("Error", "El cliente no se encuentra registrado.")
+        elif state == "HAS RESERVATION":
+            messagebox.showerror("Error", "El cliente tiene reservaciones activas.")
 
     def limpiar_campos_cliente(self):
+        self.id_entry.config(state="normal")
+        self.nombre_entry.config(state="normal")
+        self.direccion_entry.config(state="normal")
+        self.email_entry.config(state="normal")
+        self.telefono_entry.config(state="normal")
+        
         self.id_entry.delete(0, tk.END)
         self.nombre_entry.delete(0, tk.END)
         self.direccion_entry.delete(0, tk.END)
@@ -310,11 +327,12 @@ class HotelApp:
         id = self.reservacion_id_entry.get()
         cliente_id = self.cliente_id_reservacion_combobox.get()
         habitacion_id = self.habitacion_id_reservacion_combobox.get()
+        fecha_reservacion = self.fecha_reservacion_entry.get()
         fecha_salida = self.fecha_salida_entry.get()
         hora_reservacion = self.hora_reservacion_entry.get()
         costo = self.costo_reservacion_entry.get()
 
-        if not (id and cliente_id and habitacion_id and fecha_salida and hora_reservacion and costo):
+        if not (id and cliente_id and habitacion_id and fecha_reservacion and fecha_salida and hora_reservacion and costo):
             messagebox.showerror("Error", "Todos los campos son obligatorios.")
             return
 
@@ -334,8 +352,16 @@ class HotelApp:
         if habitacion.estado != "Libre":
             messagebox.showerror("Error", "La habitación no está disponible.")
             return
+        
+        #Estos valores solo son para la comparacion siguiente
+        f_entrada = datetime.strptime(fecha_reservacion, "%Y-%m-%d")
+        f_salida = datetime.strptime(fecha_salida, "%Y-%m-%d")
+        f_actual = datetime.now()
 
-        fecha_reservacion = "2024-09-03"  
+        if not (f_entrada >= f_actual and f_salida >= f_actual and f_salida > f_entrada):
+            messagebox.showerror("Error", "Las fechas no son validas.")
+            return
+        
         self.sistema.reservaciones[id] = Reservacion(id, cliente_id, habitacion_id, fecha_reservacion, fecha_salida, hora_reservacion, costo)
         self.sistema.habitaciones[habitacion_id].estado = "Reservado"
         messagebox.showinfo("Éxito", "Reservación registrada con éxito.")
@@ -396,6 +422,7 @@ class HotelApp:
         id = self.reservacion_id_entry.get()
         cliente_id = self.cliente_id_reservacion_combobox.get()
         nueva_habitacion_id = self.habitacion_id_reservacion_combobox.get()
+        fecha_reservacion = self.fecha_reservacion_entry.get()
         fecha_salida = self.fecha_salida_entry.get()
         hora_reservacion = self.hora_reservacion_entry.get()
         costo = self.costo_reservacion_entry.get()
@@ -410,6 +437,15 @@ class HotelApp:
 
         if nueva_habitacion_id not in self.sistema.habitaciones:
             messagebox.showerror("Error", "El ID de la habitación no existe.")
+            return
+        
+        #Estos valores solo son para la comparacion siguiente
+        f_entrada = datetime.strptime(fecha_reservacion, "%Y-%m-%d")
+        f_salida = datetime.strptime(fecha_salida, "%Y-%m-%d")
+        f_actual = datetime.now()
+        
+        if not (f_entrada >= f_actual and f_salida >= f_actual and f_salida > f_entrada):
+            messagebox.showerror("Error", "Las fechas no son validas.")
             return
 
         if id in self.sistema.reservaciones:
