@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import SEL, ttk, messagebox
 from tkcalendar import DateEntry
 from datetime import datetime
+
 class Cliente:
     def __init__(self, id, nombre, direccion, email, telefono):
         self.id = id
@@ -33,10 +34,14 @@ class SistemaHotel:
         self.habitaciones = {}
         self.reservaciones = {}
 
-    def registrar_cliente(self, id, nombre, direccion, email, telefono):
-        if id in self.clientes:
+        self.cliente_id_counter = 1
+        self.habitacion_id_counter = 1
+        self.reservacion_id_counter = 1
 
-            return False
+    def registrar_cliente(self, nombre, direccion, email, telefono):
+        id = str(self.cliente_id_counter)
+        self.cliente_id_counter += 1
+        
         self.clientes[id] = Cliente(id, nombre, direccion, email, telefono)
         return True
 
@@ -63,9 +68,10 @@ class SistemaHotel:
         
         return "NOT FOUND"
 
-    def registrar_habitacion(self, id, numero):
-        if id in self.habitaciones:
-            return False
+    def registrar_habitacion(self, numero):
+        id = str(self.habitacion_id_counter)
+        self.habitacion_id_counter += 1
+        
         self.habitaciones[id] = Habitacion(id, numero)
         return True
 
@@ -81,12 +87,12 @@ class SistemaHotel:
         self.habitaciones[id] = Habitacion(id, numero, estado)
         return True
 
-    def registrar_reservacion(self, id, cliente_id, habitacion_id, fecha_salida,hora_reservacion, costo):
-        if id in self.reservaciones:
-            return False
-
+    def registrar_reservacion(self, cliente_id, habitacion_id, fecha_salida, hora_reservacion, costo):
+        id = str(self.reservacion_id_counter)
+        self.reservacion_id_counter += 1
+        
         fecha_reservacion = "2024-09-03"  # Fecha actual ficticia
-        self.reservaciones[id] = Reservacion(id, cliente_id, habitacion_id, fecha_reservacion, fecha_salida,hora_reservacion, costo)
+        self.reservaciones[id] = Reservacion(id, cliente_id, habitacion_id, fecha_reservacion, fecha_salida, hora_reservacion, costo)
         self.habitaciones[habitacion_id].estado = "Reservado"
         return True
 
@@ -154,11 +160,17 @@ class HotelApp:
         self.email_entry.grid(row=4, column=1, padx=10, pady=5)
         self.telefono_entry.grid(row=5, column=1, padx=10, pady=5)
 
-        tk.Button(self.frame_clientes, text="Nuevo", command=self.nuevo_cliente).grid(row=6, column=0, padx=10, pady=5)
-        tk.Button(self.frame_clientes, text="Salvar", command=self.registrar_cliente).grid(row=6, column=1, padx=10, pady=5)
-        tk.Button(self.frame_clientes, text="Cancelar", command=self.limpiar_campos_cliente).grid(row=6, column=2, padx=10, pady=5)
-        tk.Button(self.frame_clientes, text="Editar", command=self.editar_cliente).grid(row=7, column=0, padx=10, pady=5)
-        tk.Button(self.frame_clientes, text="Eliminar", command=self.eliminar_cliente).grid(row=7, column=1, padx=10, pady=5)
+        self.nuevoButtonCliente=tk.Button(self.frame_clientes, text="Nuevo", command=self.nuevo_cliente)
+        self.salvarButtonCliente=tk.Button(self.frame_clientes, state="disable", text="Salvar", command=self.registrar_cliente)
+        self.CancelarButtonCliente=tk.Button(self.frame_clientes, state="disable", text="Cancelar", command=self.cancelar_cliente)
+        self.editarButtonCliente=tk.Button(self.frame_clientes, text="Editar", state="disable", command=self.editar_cliente)
+        self.eliminarButtonCliente=tk.Button(self.frame_clientes, text="Eliminar", state="disable", command=self.eliminar_cliente)
+        
+        self.nuevoButtonCliente.grid(row=6, column=0, padx=10, pady=5)
+        self.salvarButtonCliente.grid(row=6, column=1, padx=10, pady=5)
+        self.CancelarButtonCliente.grid(row=6, column=2, padx=10, pady=5)
+        self.editarButtonCliente.grid(row=7, column=0, padx=10, pady=5)
+        self.eliminarButtonCliente.grid(row=7, column=1, padx=10, pady=5)
 
     def setup_reservaciones_tab(self):
         tk.Label(self.frame_reservaciones, text="Ingrese Reservacion:").grid(row=0, column=0, padx=10, pady=5)
@@ -208,44 +220,80 @@ class HotelApp:
         tk.Label(self.frame_habitaciones, text="Numero:").grid(row=2, column=0, padx=10, pady=5)
         tk.Label(self.frame_habitaciones, text="Seleccione Estado Habitacion:").grid(row=3, column=0, padx=10, pady=5)
 
-        self.habitacion_id_entry = tk.Entry(self.frame_habitaciones)
-        self.habitacion_numero_entry = tk.Entry(self.frame_habitaciones)
-        self.habitacion_estado_combobox = ttk.Combobox(self.frame_habitaciones, values=["Libre", "Reservado", "Cancelado"])
+        self.habitacion_id_entry = tk.Entry(self.frame_habitaciones, state="disabled")
+        self.habitacion_numero_entry = tk.Entry(self.frame_habitaciones, state="disable")
+        self.habitacion_estado_combobox = ttk.Combobox(self.frame_habitaciones, values=["Libre", "Reservado", "Cancelado"], state="disable")
 
         self.habitacion_id_entry.grid(row=1, column=1, padx=10, pady=5)
         self.habitacion_numero_entry.grid(row=2, column=1, padx=10, pady=5)
         self.habitacion_estado_combobox.grid(row=3, column=1, padx=10, pady=5)
 
-        tk.Button(self.frame_habitaciones, text="Nueva Habitación", command=self.registrar_habitacion).grid(row=4, column=0, padx=10, pady=5)
-        tk.Button(self.frame_habitaciones, text="Editar", command=self.editar_habitacion).grid(row=4, column=1, padx=10, pady=5)
+        self.nueva_habitacionButton=tk.Button(self.frame_habitaciones, text="Nueva Habitación", command=self.nueva_habitacion,state="normal")
+        self.salvarHabitacionButton=tk.Button(self.frame_habitaciones, text="Salvar", command=self.registrar_habitacion,state="disable")
+        self.EditarHabitacionButton=tk.Button(self.frame_habitaciones, text="Editar", command=self.editar_habitacion,state="disable")
+        self.cancelarHabitacion=tk.Button(self.frame_habitaciones, text="Cancelar", command=self.cancelar_habitacion,state="disable")
+
+        self.nueva_habitacionButton.grid(row=4, column=0, padx=10, pady=5)
+        self.salvarHabitacionButton.grid(row=4, column=1, padx=10, pady=5)
+        self.EditarHabitacionButton.grid(row=4, column=2, padx=10, pady=5)
+        self.cancelarHabitacion.grid(row=5, column=1, padx=10, pady=5)
+
 
 
     def nuevo_cliente(self):
+        self.nuevoButtonCliente.config(state="disable")
+        self.salvarButtonCliente.config(state="normal")
+        self.CancelarButtonCliente.config(state="normal")
         self.limpiar_campos_cliente()
+        self.id_entry.insert(0, self.sistema.cliente_id_counter)  # Muestra el siguiente ID disponible
+        self.id_entry.config(state="disable")
         messagebox.showinfo("Nuevo Cliente", "Listo para ingresar un nuevo cliente.")
 
+
     def registrar_cliente(self):
-        id = self.id_entry.get()
+  
         nombre = self.nombre_entry.get()
         direccion = self.direccion_entry.get()
         email = self.email_entry.get()
         telefono = self.telefono_entry.get()
 
-        if not (id and nombre and direccion and email and telefono):
+        if not (nombre, direccion, email, telefono):
             messagebox.showerror("Error", "Todos los campos son obligatorios.")
             return
 
-        if self.sistema.registrar_cliente(id, nombre, direccion, email, telefono):
+        if self.sistema.registrar_cliente(nombre, direccion, email, telefono):
+            self.nuevoButtonCliente.config(state="normal")
+            self.editarButtonCliente.config(state="disable")
+            self.salvarButtonCliente.config(state="disable")
+            self.CancelarButtonCliente.config(state="disable")
+            self.eliminarButtonCliente.config(state="disable")
             messagebox.showinfo("Éxito", "Cliente registrado con éxito.")
             self.actualizar_combobox_clientes()
             self.limpiar_campos_cliente()
+            self.bloquear_campos_cliente()
         else:
-            messagebox.showerror("Error", "El ID del cliente ya existe.")
+            messagebox.showerror("Error", "No se pudo registrar el cliente.")
+
+    def cancelar_cliente(self):
+        self.limpiar_campos_cliente()
+        self.bloquear_campos_cliente()
+        self.nuevoButtonCliente.config(state="normal")
+        self.editarButtonCliente.config(state="disable")
+        self.salvarButtonCliente.config(state="disable")
+        self.CancelarButtonCliente.config(state="disable")
+        self.eliminarButtonCliente.config(state="disable")
 
     def buscar_cliente(self):
         id_cliente = self.id_cliente_entry.get()
 
         if id_cliente in self.sistema.clientes:
+            self.limpiar_campos_cliente()
+
+            self.nuevoButtonCliente.config(state="disable")
+            self.editarButtonCliente.config(state="normal")
+            self.salvarButtonCliente.config(state="disable")
+            self.CancelarButtonCliente.config(state="normal")
+            self.eliminarButtonCliente.config(state="normal")
             cliente = self.sistema.clientes[id_cliente]
             self.id_cliente_entry.delete(0, tk.END)
             self.id_entry.delete(0,tk.END)
@@ -277,8 +325,8 @@ class HotelApp:
 
         if self.sistema.editar_cliente(id, nombre, direccion, email, telefono):
             messagebox.showinfo("Éxito", "Cliente editado con éxito.")
-            self.actualizar_combobox_clientes
-            self.limpiar_campos_cliente()
+            self.actualizar_combobox_clientes()
+            self.cancelar_cliente()
         else:
             messagebox.showerror("Error", "Cliente no encontrado.")
 
@@ -289,8 +337,8 @@ class HotelApp:
 
         if state == "SUCCESS":
             messagebox.showinfo("Éxito", "Cliente eliminado con éxito.")
-            self.actualizar_combobox_clientes
-            self.limpiar_campos_cliente()
+            self.actualizar_combobox_clientes()
+            self.cancelar_cliente()
         elif state == "NOT FOUND":
             messagebox.showerror("Error", "El cliente no se encuentra registrado.")
         elif state == "HAS RESERVATION":
@@ -309,11 +357,21 @@ class HotelApp:
         self.email_entry.delete(0, tk.END)
         self.telefono_entry.delete(0, tk.END)
 
+    def bloquear_campos_cliente(self):
+        self.id_entry.config(state="disable")
+        self.nombre_entry.config(state="disable")
+        self.direccion_entry.config(state="disable")
+        self.email_entry.config(state="disable")
+        self.telefono_entry.config(state="disable")
+
+
     def nueva_reservacion(self):
         self.limpiar_campos_reservacion()
+        self.reservacion_id_entry.insert(0, self.sistema.reservacion_id_counter)  # Muestra el siguiente ID disponible
         self.actualizar_combobox_clientes()
         self.actualizar_combobox_habitaciones()
         messagebox.showinfo("Nueva Reservación", "Listo para ingresar una nueva reservación.")
+
 
     def actualizar_combobox_clientes(self):
         self.cliente_id_reservacion_combobox['values'] = list(self.sistema.clientes.keys())
@@ -478,38 +536,59 @@ class HotelApp:
 
     def nueva_habitacion(self):
         self.limpiar_campos_habitacion()
-        messagebox.showinfo("Nueva Habitación registrada")
+        self.habitacion_id_entry.config(state="normal")
+        self.habitacion_id_entry.insert(0, self.sistema.habitacion_id_counter)  # Muestra el siguiente ID disponible
+        self.habitacion_id_entry.config(state="disabled")
+        self.habitacion_estado_combobox.set("Libre")
+        self.nueva_habitacionButton.config(state="disable")
+        self.EditarHabitacionButton.config(state="disable")
+        self.salvarHabitacionButton.config(state="normal")
+        self.cancelarHabitacion.config(state="normal")
+        messagebox.showinfo("Nueva Habitación", "Listo para ingresar una nueva habitación.")
+
 
     def registrar_habitacion(self):
-        id = self.habitacion_id_entry.get()
         numero = self.habitacion_numero_entry.get()
-
-        if not (id and numero):
-            messagebox.showerror("Error", "Todos los campos son obligatorios.")
+        if not numero :
+            messagebox.showerror("Error", "El número de la habitación es obligatorio.")
             return
+        if self.sistema.registrar_habitacion(numero):
+            self.nueva_habitacionButton.config(state="normal")
+            self.EditarHabitacionButton.config(state="disable")
+            self.salvarHabitacionButton.config(state="disable")
+            self.cancelarHabitacion.config(state="disable")
 
-        if self.sistema.registrar_habitacion(id, numero):
             messagebox.showinfo("Éxito", "Habitación registrada con éxito.")
             self.actualizar_combobox_habitaciones()
             self.limpiar_campos_habitacion()
+            self.habitacion_numero_entry.config(state="disable")
         else:
-            messagebox.showerror("Error", "El ID de la habitación ya existe.")
+            messagebox.showerror("Error", "No se pudo registrar la habitación.")
 
     def buscar_habitacion(self):
 
         numero = self.habitacion_busquedanumero_entry.get()
-
         habitacion = self.sistema.buscar_habitacion(numero)
         if habitacion:
+            self.nueva_habitacionButton.config(state="disable")
+            self.EditarHabitacionButton.config(state="normal")
+            self.salvarHabitacionButton.config(state="disable")
+            self.cancelarHabitacion.config(state="normal")
+            self.habitacion_id_entry.config(state="normal")
             self.habitacion_id_entry.delete(0, tk.END)
+            self.habitacion_numero_entry.config(state="normal")
             self.habitacion_numero_entry.delete(0, tk.END)
             self.habitacion_estado_combobox.set("")
 
             self.habitacion_id_entry.insert(0, habitacion.id)
             self.habitacion_numero_entry.insert(0, habitacion.numero)
             self.habitacion_estado_combobox.set(habitacion.estado)
+            self.habitacion_estado_combobox.config(state="normal")
+            self.habitacion_id_entry.config(state="disable")
+
         else:
             messagebox.showerror("Error", "Habitación no encontrada.")
+            self.cancelar_habitacion()
 
     def editar_habitacion(self):
         id = self.habitacion_id_entry.get()
@@ -522,15 +601,28 @@ class HotelApp:
 
         if self.sistema.editar_habitacion(id, numero, estado):
             messagebox.showinfo("Éxito", "Habitación editada con éxito.")
-            self.actualizar_combobox_habitaciones
-            self.limpiar_campos_habitacion()
+            self.actualizar_combobox_habitaciones()
+            self.cancelar_habitacion()
         else:
             messagebox.showerror("Error", "Habitación no encontrada.")
 
+    def cancelar_habitacion(self):
+            self.nueva_habitacionButton.config(state="normal")
+            self.EditarHabitacionButton.config(state="disable")
+            self.salvarHabitacionButton.config(state="disable")
+            self.cancelarHabitacion.config(state="disable")
+
+            self.limpiar_campos_habitacion()
+            self.habitacion_estado_combobox.config(state="disable")
+            self.habitacion_numero_entry.config(state="disable")
+
     def limpiar_campos_habitacion(self):
+        self.habitacion_id_entry.config(state="normal")
+        self.habitacion_numero_entry.config(state="normal")
         self.habitacion_id_entry.delete(0, tk.END)
         self.habitacion_numero_entry.delete(0, tk.END)
         self.habitacion_estado_combobox.set("")
+        self.habitacion_id_entry.config(state="disabled")
 
 if __name__ == "__main__":
     root = tk.Tk()
