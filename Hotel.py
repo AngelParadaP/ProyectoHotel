@@ -173,11 +173,12 @@ class HotelApp:
         self.eliminarButtonCliente.grid(row=7, column=1, padx=10, pady=5)
 
     def setup_reservaciones_tab(self):
-        tk.Label(self.frame_reservaciones, text="Ingrese Reservacion:").grid(row=0, column=0, padx=10, pady=5)
-        self.reservacion_idreservacion_entry = tk.Entry(self.frame_reservaciones)
-        self.reservacion_idreservacion_entry.grid(row=0, column=1, padx=10, pady=5)
+        tk.Label(self.frame_reservaciones, text="Ingrese Nombre del Cliente:").grid(row=0, column=0, padx=10, pady=5)
+        self.nombre_cliente_entry = tk.Entry(self.frame_reservaciones)
+        self.nombre_cliente_entry.grid(row=0, column=1, padx=10, pady=5)
 
-        tk.Button(self.frame_reservaciones, text="Buscar Reservación", command=self.buscar_reservacion).grid(row=0, column=2, padx=10, pady=5)
+        tk.Button(self.frame_reservaciones, text="Buscar Reservación", command=self.buscar_reservacion_por_nombre).grid(row=0, column=2, padx=10, pady=5)
+
 
         tk.Label(self.frame_reservaciones, text="Reservación ID:").grid(row=1, column=0, padx=10, pady=5)
         tk.Label(self.frame_reservaciones, text="Cliente ID:").grid(row=2, column=0, padx=10, pady=5)
@@ -385,6 +386,7 @@ class HotelApp:
         self.reservacion_id_entry.insert(0, self.sistema.reservacion_id_counter)  # Muestra el siguiente ID disponible
         self.actualizar_combobox_clientes()
         self.actualizar_combobox_habitaciones()
+        self.reservacion_id_entry.config(state="disable")
         self.nuevaReservacionButton.config(state="disable")
         self.ReservarButton.config(state="normal")
         self.EditarReservacionButton.config(state="disable")
@@ -394,7 +396,7 @@ class HotelApp:
 
     def cancelaroperacion_reservacion(self):
         self.limpiar_campos_reservacion()
-        self.bloquear_campos_cliente()
+        self.bloquear_campos_reservacion()
         self.nuevaReservacionButton.config(state="normal")
         self.ReservarButton.config(state="disable")
         self.EditarReservacionButton.config(state="disable")
@@ -438,16 +440,29 @@ class HotelApp:
         if habitacion.estado != "Libre":
             messagebox.showerror("Error", "La habitación no está disponible.")
             return
-        
-        #Estos valores solo son para la comparacion siguiente
+
         f_entrada = datetime.strptime(fecha_reservacion, "%Y-%m-%d")
         f_salida = datetime.strptime(fecha_salida, "%Y-%m-%d")
         f_actual = datetime.now()
 
         if not (f_entrada >= f_actual and f_salida >= f_actual and f_salida > f_entrada):
-            messagebox.showerror("Error", "Las fechas no son validas.")
+            messagebox.showerror("Error", "Las fechas no son válidas.")
+            return
+
+        # Validación del formato de la hora y del rango permitido
+        import re
+        if not re.match(r"^(?:[01]\d|2[0-3]):[0-5]\d$", hora_reservacion):
+            messagebox.showerror("Error", "La hora debe estar en formato HH:MM de 24 horas.")
             return
         
+        hora_obj = datetime.strptime(hora_reservacion, "%H:%M").time()
+        hora_inicio = datetime.strptime("08:00", "%H:%M").time()
+        hora_fin = datetime.strptime("22:00", "%H:%M").time()
+
+        if not (hora_inicio <= hora_obj <= hora_fin):
+            messagebox.showerror("Error", f"La hora debe estar entre {hora_inicio} y {hora_fin}.")
+            return
+
         self.sistema.reservaciones[id] = Reservacion(id, cliente_id, habitacion_id, fecha_reservacion, fecha_salida, hora_reservacion, costo)
         self.sistema.habitaciones[habitacion_id].estado = "Reservado"
         messagebox.showinfo("Éxito", "Reservación registrada con éxito.")
@@ -456,39 +471,33 @@ class HotelApp:
         self.limpiar_campos_reservacion()
         self.cancelaroperacion_reservacion()
 
-    
-    def buscar_reservacion(self):
+
         
-        self.limpiar_campos_reservacion()
-        self.actualizar_combobox_clientes()
-        self.actualizar_combobox_habitaciones()
-        reservacion_id = self.reservacion_idreservacion_entry.get()
-
-        reservacion = self.sistema.reservaciones.get(reservacion_id)
+    def buscar_reservacion_por_nombre(self):
+        nombre_cliente = self.nombre_cliente_entry.get()
+        reservacion = self.sistema.buscar_reservacion(nombre_cliente)
+        
         if reservacion:
-            cliente = self.sistema.clientes.get(reservacion.cliente_id)
             self.reservacion_id_entry.delete(0, tk.END)
-            self.cliente_id_reservacion_combobox.delete(0, tk.END)
-            self.habitacion_id_reservacion_combobox.delete(0, tk.END)
-            self.fecha_reservacion_entry.delete(0, tk.END)
-            self.fecha_salida_entry.delete(0, tk.END)
-            self.hora_reservacion_entry.delete(0, tk.END)
-            self.costo_reservacion_entry.delete(0, tk.END)
-
             self.reservacion_id_entry.insert(0, reservacion.id)
-            self.cliente_id_reservacion_combobox.insert(0, reservacion.cliente_id)
-            self.habitacion_id_reservacion_combobox.insert(0, reservacion.habitacion_id)
-            self.fecha_reservacion_entry.insert(0, reservacion.fecha_reservacion)
-            self.fecha_salida_entry.insert(0, reservacion.fecha_salida)
+            self.cliente_id_reservacion_combobox.set(reservacion.cliente_id)
+            self.habitacion_id_reservacion_combobox.set(reservacion.habitacion_id)
+            self.fecha_reservacion_entry.set_date(reservacion.fecha_reservacion)
+            self.fecha_salida_entry.set_date(reservacion.fecha_salida)
+            self.hora_reservacion_entry.delete(0, tk.END)
             self.hora_reservacion_entry.insert(0, reservacion.hora_reservacion)
+            self.costo_reservacion_entry.delete(0, tk.END)
             self.costo_reservacion_entry.insert(0, reservacion.costo)
+            self.reservacion_id_entry.config(state="disable")
+            self.cliente_id_reservacion_combobox.config(state="disable")
             self.nuevaReservacionButton.config(state="disable")
             self.ReservarButton.config(state="disable")
             self.EditarReservacionButton.config(state="normal")
             self.CancelarReservacionButton.config(state="normal")
             self.CancelarOperacionReservacionButton.config(state="normal")
+
         else:
-            messagebox.showerror("Error", "Reservación no encontrada.")
+            messagebox.showerror("Reservación no encontrada.")
 
 
     def cancelar_reservacion(self):
@@ -538,20 +547,33 @@ class HotelApp:
         if nueva_habitacion_id not in self.sistema.habitaciones:
             messagebox.showerror("Error", "El ID de la habitación no existe.")
             return
-        
-        #Estos valores solo son para la comparacion siguiente
+
+        # Validación del formato de la hora y del rango permitido
+        import re
+        if not re.match(r"^(?:[01]\d|2[0-3]):[0-5]\d$", hora_reservacion):
+            messagebox.showerror("Error", "La hora debe estar en formato HH:MM de 24 horas.")
+            return
+
+        hora_obj = datetime.strptime(hora_reservacion, "%H:%M").time()
+        hora_inicio = datetime.strptime("08:00", "%H:%M").time()
+        hora_fin = datetime.strptime("22:00", "%H:%M").time()
+
+        if not (hora_inicio <= hora_obj <= hora_fin):
+            messagebox.showerror("Error", f"La hora debe estar entre {hora_inicio} y {hora_fin}.")
+            return
+
         f_entrada = datetime.strptime(fecha_reservacion, "%Y-%m-%d")
         f_salida = datetime.strptime(fecha_salida, "%Y-%m-%d")
         f_actual = datetime.now()
-        
+
         if not (f_entrada >= f_actual and f_salida >= f_actual and f_salida > f_entrada):
-            messagebox.showerror("Error", "Las fechas no son validas.")
+            messagebox.showerror("Error", "Las fechas no son válidas.")
             return
 
         if id in self.sistema.reservaciones:
             reservacion = self.sistema.reservaciones[id]
             habitacion_antigua_id = reservacion.habitacion_id
-            
+
             # Actualizar la habitación antigua a "Libre"
             if habitacion_antigua_id in self.sistema.habitaciones:
                 self.sistema.habitaciones[habitacion_antigua_id].estado = "Libre"
@@ -574,8 +596,6 @@ class HotelApp:
             self.cancelaroperacion_reservacion()
         else:
             messagebox.showerror("Error", "Reservación no encontrada.")
-
-
 
     def nueva_habitacion(self):
         self.limpiar_campos_habitacion()
