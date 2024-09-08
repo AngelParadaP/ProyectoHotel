@@ -187,13 +187,13 @@ class HotelApp:
         tk.Label(self.frame_reservaciones, text="Hora Reservación:").grid(row=6, column=0, padx=10, pady=5)
         tk.Label(self.frame_reservaciones, text="Costo:").grid(row=7, column=0, padx=10, pady=5)
 
-        self.reservacion_id_entry = tk.Entry(self.frame_reservaciones)
-        self.cliente_id_reservacion_combobox = ttk.Combobox(self.frame_reservaciones)
-        self.habitacion_id_reservacion_combobox = ttk.Combobox(self.frame_reservaciones)
-        self.fecha_reservacion_entry = DateEntry(self.frame_reservaciones, date_pattern="yyyy-mm-dd")
-        self.fecha_salida_entry = DateEntry(self.frame_reservaciones, date_pattern="yyyy-mm-dd")
-        self.hora_reservacion_entry = tk.Entry(self.frame_reservaciones)
-        self.costo_reservacion_entry = tk.Entry(self.frame_reservaciones)
+        self.reservacion_id_entry = tk.Entry(self.frame_reservaciones,state="disable")
+        self.cliente_id_reservacion_combobox = ttk.Combobox(self.frame_reservaciones,state="disable")
+        self.habitacion_id_reservacion_combobox = ttk.Combobox(self.frame_reservaciones,state="disable")
+        self.fecha_reservacion_entry = DateEntry(self.frame_reservaciones, date_pattern="yyyy-mm-dd",state="disable")
+        self.fecha_salida_entry = DateEntry(self.frame_reservaciones, date_pattern="yyyy-mm-dd",state="disable")
+        self.hora_reservacion_entry = tk.Entry(self.frame_reservaciones,state="disable")
+        self.costo_reservacion_entry = tk.Entry(self.frame_reservaciones,state="disable")
 
         self.reservacion_id_entry.grid(row=1, column=1, padx=10, pady=5)
         self.cliente_id_reservacion_combobox.grid(row=2, column=1, padx=10, pady=5)
@@ -203,11 +203,17 @@ class HotelApp:
         self.hora_reservacion_entry.grid(row=6, column=1, padx=10, pady=5)
         self.costo_reservacion_entry.grid(row=7, column=1, padx=10, pady=5)
 
-        tk.Button(self.frame_reservaciones, text="Nueva Reservacion", command=self.nueva_reservacion).grid(row=8, column=0, padx=10, pady=5)
-        tk.Button(self.frame_reservaciones, text="Reservar", command=self.registrar_reservacion).grid(row=8, column=1, padx=10, pady=5)
-        tk.Button(self.frame_reservaciones, text="Cancelar Reservacion", command=self.cancelar_reservacion).grid(row=8, column=2, padx=10, pady=5)
-        tk.Button(self.frame_reservaciones, text="Editar", command=self.editar_reservacion).grid(row=9, column=0, padx=10, pady=5)
+        self.nuevaReservacionButton=tk.Button(self.frame_reservaciones, text="Nueva Reservacion", command=self.nueva_reservacion,state="normal")
+        self.ReservarButton=tk.Button(self.frame_reservaciones, text="Reservar", command=self.registrar_reservacion ,state="disable")
+        self.CancelarReservacionButton=tk.Button(self.frame_reservaciones, text="Cancelar Reservacion", command=self.cancelar_reservacion,state="disable")
+        self.EditarReservacionButton=tk.Button(self.frame_reservaciones, text="Editar", command=self.editar_reservacion,state="disable")
+        self.CancelarOperacionReservacionButton=tk.Button(self.frame_reservaciones, text="Cancelar Operacion", command=self.cancelaroperacion_reservacion,state="disable")
 
+        self.nuevaReservacionButton.grid(row=8, column=0, padx=10, pady=5)
+        self.ReservarButton.grid(row=8, column=1, padx=10, pady=5)
+        self.CancelarReservacionButton.grid(row=8, column=2, padx=10, pady=5)
+        self.EditarReservacionButton.grid(row=9, column=0, padx=10, pady=5)
+        self.CancelarOperacionReservacionButton.grid(row=9, column=1, padx=10, pady=5)
 
     def setup_habitaciones_tab(self):
         tk.Label(self.frame_habitaciones, text="Ingrese Numero de Habitación:").grid(row=0, column=0, padx=10, pady=5)
@@ -364,14 +370,36 @@ class HotelApp:
         self.email_entry.config(state="disable")
         self.telefono_entry.config(state="disable")
 
+    def bloquear_campos_reservacion(self):
+        self.limpiar_campos_reservacion()
+        self.reservacion_id_entry.config(state="disable")
+        self.cliente_id_reservacion_combobox.config(state="disable")
+        self.habitacion_id_reservacion_combobox.config(state="disable")
+        self.fecha_reservacion_entry.config(state="disable")
+        self.fecha_salida_entry.config(state="disable")
+        self.hora_reservacion_entry.config(state="disable")
+        self.costo_reservacion_entry.config(state="disable")
 
     def nueva_reservacion(self):
         self.limpiar_campos_reservacion()
         self.reservacion_id_entry.insert(0, self.sistema.reservacion_id_counter)  # Muestra el siguiente ID disponible
         self.actualizar_combobox_clientes()
         self.actualizar_combobox_habitaciones()
+        self.nuevaReservacionButton.config(state="disable")
+        self.ReservarButton.config(state="normal")
+        self.EditarReservacionButton.config(state="disable")
+        self.CancelarReservacionButton.config(state="disable")
+        self.CancelarOperacionReservacionButton.config(state="normal")
         messagebox.showinfo("Nueva Reservación", "Listo para ingresar una nueva reservación.")
 
+    def cancelaroperacion_reservacion(self):
+        self.limpiar_campos_reservacion()
+        self.bloquear_campos_cliente()
+        self.nuevaReservacionButton.config(state="normal")
+        self.ReservarButton.config(state="disable")
+        self.EditarReservacionButton.config(state="disable")
+        self.CancelarReservacionButton.config(state="disable")
+        self.CancelarOperacionReservacionButton.config(state="disable")
 
     def actualizar_combobox_clientes(self):
         self.cliente_id_reservacion_combobox['values'] = list(self.sistema.clientes.keys())
@@ -426,9 +454,12 @@ class HotelApp:
         self.actualizar_combobox_clientes()
         self.actualizar_combobox_habitaciones()
         self.limpiar_campos_reservacion()
+        self.cancelaroperacion_reservacion()
 
     
     def buscar_reservacion(self):
+        
+        self.limpiar_campos_reservacion()
         self.actualizar_combobox_clientes()
         self.actualizar_combobox_habitaciones()
         reservacion_id = self.reservacion_idreservacion_entry.get()
@@ -451,23 +482,34 @@ class HotelApp:
             self.fecha_salida_entry.insert(0, reservacion.fecha_salida)
             self.hora_reservacion_entry.insert(0, reservacion.hora_reservacion)
             self.costo_reservacion_entry.insert(0, reservacion.costo)
+            self.nuevaReservacionButton.config(state="disable")
+            self.ReservarButton.config(state="disable")
+            self.EditarReservacionButton.config(state="normal")
+            self.CancelarReservacionButton.config(state="normal")
+            self.CancelarOperacionReservacionButton.config(state="normal")
         else:
             messagebox.showerror("Error", "Reservación no encontrada.")
 
 
     def cancelar_reservacion(self):
         id = self.reservacion_id_entry.get()
-
         if self.sistema.eliminar_reservacion(id):
             self.actualizar_combobox_clientes()
             self.actualizar_combobox_habitaciones()
-            messagebox.showinfo("Éxito", "Reservación cancelada con éxito.")
-            
+            messagebox.showinfo("Éxito", "Reservación cancelada con éxito.")       
             self.limpiar_campos_reservacion()
+            self.cancelaroperacion_reservacion()
         else:
             messagebox.showerror("Error", "Reservación no encontrada.")
 
     def limpiar_campos_reservacion(self):
+        self.reservacion_id_entry.config(state="normal")
+        self.cliente_id_reservacion_combobox.config(state="normal")
+        self.habitacion_id_reservacion_combobox.config(state="normal")
+        self.fecha_reservacion_entry.config(state="normal")
+        self.fecha_salida_entry.config(state="normal")
+        self.hora_reservacion_entry.config(state="normal")
+        self.costo_reservacion_entry.config(state="normal")
         self.reservacion_id_entry.delete(0, tk.END)
         self.cliente_id_reservacion_combobox.delete(0, tk.END)
         self.habitacion_id_reservacion_combobox.delete(0, tk.END)
@@ -529,6 +571,7 @@ class HotelApp:
             self.actualizar_combobox_clientes()
             self.actualizar_combobox_habitaciones()
             self.limpiar_campos_reservacion()
+            self.cancelaroperacion_reservacion()
         else:
             messagebox.showerror("Error", "Reservación no encontrada.")
 
