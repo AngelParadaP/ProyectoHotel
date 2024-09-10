@@ -684,10 +684,11 @@ class HotelApp:
             messagebox.showerror("Error", "No se puede cambiar el numero de habitacion si está reservada")
             return
         
-        for habitacion in self.sistema.habitaciones.values():
-            if habitacion.numero == numero:
-                messagebox.showerror("Error", "Ya existe esa habitación")
-                return
+        if habitacion.numero != numero:
+            for habitacion in self.sistema.habitaciones.values():
+                if habitacion.numero == numero:
+                    messagebox.showerror("Error", "Ya existe esa habitación")
+                    return
 
         if self.sistema.editar_habitacion(id, numero, estado):
             messagebox.showinfo("Éxito", "Habitación editada con éxito.")
