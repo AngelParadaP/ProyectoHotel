@@ -262,6 +262,11 @@ class HotelApp:
             messagebox.showerror("Error", "Todos los campos son obligatorios.")
             return
 
+        for cliente in self.sistema.clientes.values():
+            if cliente.nombre.lower() == nombre.lower():
+                messagebox.showerror("Error", "El nombre del cliente ya existe.")
+                return
+
         if self.sistema.registrar_cliente(nombre, direccion, email, telefono):
             self.nuevoButtonCliente.config(state="normal")
             self.editarButtonCliente.config(state="disable")
@@ -679,15 +684,21 @@ class HotelApp:
         if not (id and numero and estado):
             messagebox.showerror("Error", "Todos los campos son obligatorios.")
             return
+
+        # Verifica si la habitación está reservada
+        for reservacion in self.sistema.reservaciones.values():
+            if reservacion.habitacion_id == id:
+                messagebox.showerror("Error", "No se puede editar una habitación que está en una reservación activa.")
+                return
         
         if habitacion.estado == "Reservado" and habitacion.numero != numero:
-            messagebox.showerror("Error", "No se puede cambiar el numero de habitacion si está reservada")
+            messagebox.showerror("Error", "No se puede cambiar el número de habitación si está reservada.")
             return
-        
+
         if habitacion.numero != numero:
-            for habitacion in self.sistema.habitaciones.values():
-                if habitacion.numero == numero:
-                    messagebox.showerror("Error", "Ya existe esa habitación")
+            for hab in self.sistema.habitaciones.values():
+                if hab.numero == numero:
+                    messagebox.showerror("Error", "Ya existe una habitación con ese número.")
                     return
 
         if self.sistema.editar_habitacion(id, numero, estado):
@@ -696,6 +707,7 @@ class HotelApp:
             self.cancelar_habitacion()
         else:
             messagebox.showerror("Error", "Habitación no encontrada.")
+
 
     def cancelar_habitacion(self):
             self.nueva_habitacionButton.config(state="normal")
