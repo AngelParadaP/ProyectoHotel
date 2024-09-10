@@ -494,7 +494,7 @@ class HotelApp:
 
             self.reservacion_id_entry.config(state="disabled")
             self.cliente_id_reservacion_combobox.config(state="disabled")
-            self.habitacion_id_reservacion_combobox.config(state="disabled")
+            self.habitacion_id_reservacion_combobox.config(state="normal")
             
             self.nuevaReservacionButton.config(state="disable")
             self.ReservarButton.config(state="disable")
