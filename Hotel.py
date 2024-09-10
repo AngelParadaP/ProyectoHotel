@@ -328,6 +328,11 @@ class HotelApp:
         if not (id and nombre and direccion and email and telefono):
             messagebox.showerror("Error", "Todos los campos son obligatorios.")
             return
+        
+        for cliente in self.sistema.clientes.values():
+            if cliente.nombre.lower() == nombre.lower():
+                messagebox.showerror("Error", "El nombre del cliente ya existe.")
+                return
 
         if self.sistema.editar_cliente(id, nombre, direccion, email, telefono):
             messagebox.showinfo("Éxito", "Cliente editado con éxito.")
